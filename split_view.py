@@ -17,19 +17,23 @@ from matplotlib.lines import Line2D
 # LOOK  (one column per protein group; edit values, keep the order)
 # =============================================================================
 FATES       = ["critical protein", "previously removed", "splits off", "stays in largest part", "already disconnected"]
-FATE_COLORS = ["#F0E442",          "#000000",            "#D55E00",    "#A6CEE3",               "#E5E5E5"]
+FATE_COLORS = ["#D62728",          "#000000",            "#F0E442",    "#A6CEE3",               "#E5E5E5"]
 FATE_SHAPES = ["DIAMOND",          "ELLIPSE",            "ELLIPSE",    "ELLIPSE",               "ELLIPSE"]
-FATE_SIZES  = [80,                 30,                   40,           25,                      18]    # Cytoscape px
-FATE_BORDER = [4,                  0,                    1.5,          0,                       0]     # black border width
-LABEL_SIZES = [26,                 14,                   12,           0,                       0]     # 0 = no labels
+FATE_SIZES  = [80,                 30,                   35,           25,                      18]    # Cytoscape px
+FATE_BORDER = [3,                  0,                    1,            0,                       0]     # black border width
+LABEL_SIZES = [26,                 0,                    0,            0,                       0]     # 0 = no labels
 MAX_LABELS_PER_GROUP = 40          # a group bigger than this gets no labels (avoids clutter);
                                    # the critical protein is always labelled
+LABEL_ALSO = []                    # extra proteins to label by gene name, e.g. ["COX1", "SSC1"]
+LABEL_ALSO_SIZE = 14
 
 EDGE_STATUSES = ["cut by critical protein", "inside split-off part", "lost earlier", "other"]
-EDGE_COLORS   = ["#000000",                 "#D55E00",               "#BDBDBD",      "#D9D9D9"]
-EDGE_WIDTHS   = [2.5,                       2.0,                     0.8,            0.8]
+EDGE_COLORS   = ["#000000",                 "#C9A400",               "#BDBDBD",      "#D9D9D9"]
+EDGE_WIDTHS   = [0.8,                       0.8,                     0.8,            0.8]
 EDGE_LINES    = ["EQUAL_DASH",              "SOLID",                 "DOT",          "SOLID"]     # Cytoscape line types
 
+SHOW_REMOVED_IN_VIEW = False   # False: the breaking-point panel (and Cytoscape network) shows only
+                               # proteins still present; True: previously removed are drawn in black
 LABEL_POSITION = "N,S,c,0.00,0.00"   # Cytoscape: label above the node (so black nodes keep readable labels)
 STYLE_NAME = "Attack split"
 # =============================================================================
@@ -63,11 +67,19 @@ def build_view(G, removed_before, critical, sym):
             piece[n] = "" if i == 0 else f"piece {i} ({len(p)} proteins)"
     fate[critical] = "critical protein"
 
-    counts = Counter(fate.values())
-    label_size = _look(LABEL_SIZES)
-    label = {n: sym(n) if label_size[fate[n]] > 0 and
-             (fate[n] == "critical protein" or counts[fate[n]] <= MAX_LABELS_PER_GROUP) else ""
-             for n in G}
+    shown = [n for n in G if SHOW_REMOVED_IN_VIEW or n not in removed]
+    counts = Counter(fate[n] for n in shown)
+    group_size = _look(LABEL_SIZES)
+    also = set(LABEL_ALSO)
+    label, label_size = {}, {}
+    for n in G:
+        f = fate[n]
+        if f == "critical protein" or (group_size[f] > 0 and counts[f] <= MAX_LABELS_PER_GROUP):
+            label[n], label_size[n] = sym(n), group_size[f]
+        elif sym(n) in also or n in also:
+            label[n], label_size[n] = sym(n), LABEL_ALSO_SIZE
+        else:
+            label[n], label_size[n] = "", 0
 
     split_nodes = set().union(*pieces[1:]) if len(pieces) > 1 else set()
 
@@ -80,14 +92,17 @@ def build_view(G, removed_before, critical, sym):
             return "inside split-off part"
         return "other"
 
-    nodes = pd.DataFrame({"id": list(G.nodes())})
+    nodes = pd.DataFrame({"id": shown})
     nodes["symbol"] = nodes["id"].map(sym)
     nodes["fate"] = nodes["id"].map(fate)
     nodes["piece"] = nodes["id"].map(piece)
     nodes["label"] = nodes["id"].map(label)
-    edges = pd.DataFrame([(str(a), str(b), edge_status(a, b)) for a, b in G.edges()],
+    nodes["label_size"] = nodes["id"].map(label_size).astype(int)
+    edges = pd.DataFrame([(str(a), str(b), edge_status(a, b)) for a, b in G.edges()
+                          if SHOW_REMOVED_IN_VIEW or (a not in removed and b not in removed)],
                          columns=["source", "target", "edge_status"])
     return dict(G=G, critical=critical, removed_before=list(removed_before), fate=fate, label=label,
+                label_size=label_size, shown=shown,
                 pieces=pieces, nodes=nodes, edges=edges, lcc_before=len(main), lcc_after=lcc_after,
                 counts=counts)
 
@@ -149,23 +164,25 @@ def draw_view(v, pos, step, attack_name, path):
                                    style=_MPL_LINE.get(eline[st], "solid"))
     for f in ["already disconnected", "stays in largest part", "splits off", "previously removed",
               "critical protein"]:
-        nl = [n for n in G if fate[n] == f]
+        nl = [n for n in v["shown"] if fate[n] == f]
         if nl:
             nx.draw_networkx_nodes(G, pos, nodelist=nl, node_color=color[f], ax=ax2,
                                    node_shape=_MPL_SHAPE.get(shape[f], "o"), node_size=_mpl_size(size[f]),
                                    edgecolors="black" if border[f] > 0 else color[f],
                                    linewidths=border[f] * 0.5 if border[f] > 0 else 0)
-    for f in FATES:
-        lab = {n: v["label"][n] for n in G if fate[n] == f and v["label"][n]}
-        if lab:
-            nx.draw_networkx_labels(G, {n: (pos[n][0], pos[n][1] + lift) for n in lab}, labels=lab, ax=ax2,
-                                    font_size=lsize[f] * 0.5, font_weight="bold",
-                                    bbox=dict(facecolor="white", edgecolor="none", alpha=0.75, pad=0.6))
+    for fs in sorted({z for z in v["label_size"].values() if z > 0}):
+        lab = {n: v["label"][n] for n in v["shown"] if v["label_size"][n] == fs}
+        if not lab:
+            continue
+        nx.draw_networkx_labels(G, {n: (pos[n][0], pos[n][1] + lift) for n in lab}, labels=lab, ax=ax2,
+                                font_size=fs * 0.5, font_weight="bold",
+                                bbox=dict(facecolor="white", edgecolor="none", alpha=0.8, pad=0.6))
     handles = [Line2D([], [], ls="", marker=_MPL_SHAPE.get(shape[f], "o"), ms=12 if f == "critical protein" else 8,
                       mfc=color[f], mec="black" if border[f] > 0 else color[f],
-                      label=f"{f} ({v['counts'].get(f, 0)})") for f in FATES]
-    handles += [Line2D([], [], color=ecolor[s], lw=ewidth[s], ls=_MPL_LINE.get(eline[s], "solid"), label=s)
-                for s in EDGE_STATUSES if s != "other"]
+                      label=f"{f} ({v['counts'].get(f, 0)})") for f in FATES if v["counts"].get(f, 0) > 0]
+    present = set(v["edges"]["edge_status"])
+    handles += [Line2D([], [], color=ecolor[s], lw=max(ewidth[s], 1.5), ls=_MPL_LINE.get(eline[s], "solid"), label=s)
+                for s in EDGE_STATUSES if s != "other" and s in present]
     ax2.legend(handles=handles, loc="upper left", fontsize=11, frameon=False)
     ax2.set_title(f"Removing {v['label'][crit]} at step {step}: largest component "
                   f"{v['lcc_before']} → {v['lcc_after']} proteins", fontsize=13)
@@ -219,7 +236,7 @@ def send_to_cytoscape(items, collection, base_title, out_dir):
                     ("node size", "fate", "d", FATES, FATE_SIZES),
                     ("node shape", "fate", "d", FATES, FATE_SHAPES),
                     ("node border width", "fate", "d", FATES, FATE_BORDER),
-                    ("node label font size", "fate", "d", FATES, LABEL_SIZES),
+                    ("node label font size", "label_size", "p", [], []),
                     ("edge stroke unselected paint", "edge_status", "d", EDGE_STATUSES, EDGE_COLORS),
                     ("edge width", "edge_status", "d", EDGE_STATUSES, EDGE_WIDTHS),
                     ("edge line type", "edge_status", "d", EDGE_STATUSES, EDGE_LINES),

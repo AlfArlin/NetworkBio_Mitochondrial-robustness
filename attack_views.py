@@ -20,7 +20,9 @@ import sys
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+import importlib
 import split_view as sv            # shared look + drawing (keep split_view.py in this folder)
+importlib.reload(sv)               # always use the latest edits to split_view.py
 
 # ----------------------------------------------------------------------------
 # CONFIG
