@@ -1,0 +1,11 @@
+nodes	341.0
+edges	3580.0
+average degree	20.9971
+density	0.0618
+connected components	30.0
+largest component (nodes)	263.0
+average clustering coefficient	0.4856
+transitivity	0.9438
+average shortest path (largest comp.)	4.4455
+diameter (largest comp.)	13.0
+degree assortativity	0.8561

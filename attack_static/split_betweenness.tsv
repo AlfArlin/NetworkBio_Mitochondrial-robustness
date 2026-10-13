@@ -1,0 +1,321 @@
+id	symbol	fate	piece	degree_intact
+Q0045	COX1	critical protein		15
+YDR231C	COX20	splits off	piece 1 (65 proteins)	3
+YLR067C	PET309	splits off	piece 2 (1 proteins)	1
+Q0140	VAR1	stays in largest part		36
+Q0060	AI3	splits off	piece 1 (65 proteins)	8
+Q0065	AI4	splits off	piece 1 (65 proteins)	10
+Q0070	AI5_ALPHA	splits off	piece 1 (65 proteins)	10
+YGL226W	MTC3	splits off	piece 1 (65 proteins)	8
+YGR112W	SHY1	splits off	piece 3 (1 proteins)	2
+Q0275	COX3	splits off	piece 1 (65 proteins)	12
+YLR038C	COX12	splits off	piece 1 (65 proteins)	12
+YML030W	RCF1	splits off	piece 1 (65 proteins)	5
+YMR256C	COX7	splits off	piece 1 (65 proteins)	10
+Q0110	BI2	already disconnected		2
+YNL292W	PUS4	stays in largest part		1
+YPL118W	MRP51	stays in largest part		79
+YDR041W	RSM10	stays in largest part		79
+YBR146W	MRPS9	stays in largest part		79
+YDR494W	RSM28	stays in largest part		73
+YBL090W	MRP21	stays in largest part		79
+YHR059W	FYV4	stays in largest part		79
+YIL093C	RSM25	stays in largest part		79
+YJR113C	RSM7	stays in largest part		79
+YGR165W	MRPS35	stays in largest part		79
+YGR215W	RSM27	stays in largest part		79
+YNL137C	NAM9	stays in largest part		79
+YDR347W	MRP1	stays in largest part		81
+YDR036C	EHD3	stays in largest part		76
+YNR036C	MRPS12	stays in largest part		79
+YMR158W	MRPS8	stays in largest part		79
+YER050C	RSM18	stays in largest part		80
+YDR337W	MRPS28	stays in largest part		79
+YPL013C	MRPS16	stays in largest part		79
+YGL129C	RSM23	stays in largest part		79
+YJR101W	RSM26	stays in largest part		80
+YNL081C	SWS2	stays in largest part		79
+YNR037C	RSM19	stays in largest part		79
+YPR166C	MRP2	stays in largest part		79
+YNL306W	MRPS18	stays in largest part		79
+YDL045W-A	MRP10	stays in largest part		79
+YKL003C	MRP17	stays in largest part		79
+YMR188C	MRPS17	stays in largest part		79
+YOR158W	PET123	stays in largest part		77
+YKL155C	RSM22	stays in largest part		35
+YBR251W	MRPS5	stays in largest part		80
+YLR204W	QRI5	stays in largest part		76
+YAL015C	NTG1	already disconnected		1
+YOL043C	NTG2	already disconnected		1
+YAL039C	CYC3	already disconnected		3
+YOR037W	CYC2	already disconnected		1
+YAR035W	YAT1	already disconnected		2
+YKL087C	CYT2	already disconnected		1
+YAL044C	GCV3	splits off	piece 1 (65 proteins)	5
+YOR196C	LIP5	splits off	piece 1 (65 proteins)	2
+YLR239C	LIP2	splits off	piece 1 (65 proteins)	1
+YDR019C	GCV1	splits off	piece 1 (65 proteins)	6
+YMR189W	GCV2	splits off	piece 1 (65 proteins)	4
+YML042W	CAT2	already disconnected		1
+YBL013W	FMT1	already disconnected		1
+YBR084W	MIS1	already disconnected		1
+YBL038W	MRPL16	stays in largest part		80
+YDR116C	MRPL1	stays in largest part		22
+YKL167C	MRP49	stays in largest part		28
+YGL068W	MNP1	stays in largest part		25
+YBR268W	MRPL37	stays in largest part		25
+YKL138C	MRPL31	stays in largest part		76
+YLR312W-A	MRPL15	stays in largest part		76
+YMR064W	AEP1	stays in largest part		73
+YMR282C	AEP2	stays in largest part		73
+YNR022C	MRPL50	stays in largest part		76
+YNL122C	MRP35	stays in largest part		75
+YBR122C	MRPL36	stays in largest part		81
+YGR076C	MRPL25	stays in largest part		76
+YJL096W	MRPL49	stays in largest part		76
+YMR098C	ATP25	stays in largest part		73
+YPL173W	MRPL40	stays in largest part		76
+YMR193W	MRPL24	stays in largest part		77
+YCR003W	MRPL32	stays in largest part		79
+YDR296W	MHR1	stays in largest part		78
+YKL170W	MRPL38	stays in largest part		76
+YDR405W	MRP20	stays in largest part		80
+YBR282W	MRPL27	stays in largest part		80
+YDL202W	MRPL11	stays in largest part		72
+YDR115W	MRX14	stays in largest part		78
+YML009C	MRPL39	stays in largest part		81
+YMR286W	MRPL33	stays in largest part		80
+YNL185C	MRPL19	stays in largest part		72
+YNL252C	MRPL17	stays in largest part		79
+YHR147C	MRPL6	stays in largest part		76
+YCR071C	IMG2	stays in largest part		80
+YPL183W-A	RTC6	stays in largest part		76
+YGR220C	MRPL9	stays in largest part		82
+YEL050C	RML2	stays in largest part		79
+YKR006C	MRPL13	stays in largest part		76
+YNL005C	MRP7	stays in largest part		80
+YDR322W	MRPL35	stays in largest part		76
+YJL063C	MRPL8	stays in largest part		79
+YPR100W	MRPL51	stays in largest part		79
+YMR024W	MRPL3	stays in largest part		79
+YKR085C	MRPL20	stays in largest part		76
+YCR046C	IMG1	stays in largest part		80
+YDR237W	MRPL7	stays in largest part		76
+YDR462W	MRPL28	stays in largest part		77
+YLR439W	MRPL4	stays in largest part		82
+YML025C	YML6	stays in largest part		80
+YNL284C	MRPL10	stays in largest part		82
+YOR150W	MRPL23	stays in largest part		80
+YBL064C	PRX1	already disconnected		1
+YPL091W	GLR1	already disconnected		1
+YBL080C	PET112	already disconnected		5
+YDR061W	YDR061W	already disconnected		1
+YDR376W	ARH1	already disconnected		2
+YPL104W	MSD1	already disconnected		1
+YGR102C	GTF1	already disconnected		2
+YMR293C	HER2	already disconnected		2
+YGR150C	CCM1	stays in largest part		31
+YBR011C	IPP1	already disconnected		1
+YMR267W	PPA2	already disconnected		1
+YBR024W	SCO2	already disconnected		2
+YBR037C	SCO1	already disconnected		2
+YMR244C-A	COA6	already disconnected		2
+YBR035C	PDX3	already disconnected		1
+YGR017W	YGR017W	already disconnected		2
+YBR039W	ATP3	splits off	piece 1 (65 proteins)	14
+YOR020W-A	MCO10	splits off	piece 1 (65 proteins)	12
+YDR322C-A	TIM11	splits off	piece 1 (65 proteins)	12
+YDR377W	ATP17	splits off	piece 1 (65 proteins)	12
+YOL077W-A	ATP19	splits off	piece 1 (65 proteins)	12
+YDL130W-A	STF1	splits off	piece 1 (65 proteins)	2
+YDL181W	INH1	splits off	piece 1 (65 proteins)	9
+YPR020W	ATP20	splits off	piece 1 (65 proteins)	14
+YDL004W	ATP16	splits off	piece 1 (65 proteins)	13
+YDR298C	ATP5	splits off	piece 1 (65 proteins)	14
+YKL016C	ATP7	splits off	piece 1 (65 proteins)	13
+YLR295C	ATP14	splits off	piece 1 (65 proteins)	13
+YPL078C	ATP4	splits off	piece 1 (65 proteins)	14
+YPL271W	ATP15	splits off	piece 1 (65 proteins)	13
+YBR106W	SND3	already disconnected		3
+YLR342W	FKS1	already disconnected		3
+YGR132C	PHB1	already disconnected		2
+YGR231C	PHB2	already disconnected		3
+YBR120C	CBP6	stays in largest part		1
+YPL215W	CBP3	stays in largest part		3
+YBR121C	GRS1	already disconnected		1
+YPR081C	GRS2	already disconnected		1
+YBR185C	MBA1	stays in largest part		1
+YOR205C	GEP3	stays in largest part		1
+YBR263W	SHM1	splits off	piece 1 (65 proteins)	2
+YLR058C	SHM2	splits off	piece 1 (65 proteins)	3
+YBR269C	SDH8	already disconnected		1
+YKL148C	SDH1	already disconnected		6
+YCL009C	ILV6	splits off	piece 1 (65 proteins)	3
+YJR016C	ILV3	splits off	piece 1 (65 proteins)	4
+YLR355C	ILV5	splits off	piece 1 (65 proteins)	6
+YCL017C	NFS1	already disconnected		7
+YPR048W	TAH18	already disconnected		6
+YPL059W	GRX5	already disconnected		8
+YPL252C	YAH1	already disconnected		7
+YDL120W	YFH1	already disconnected		7
+YER048W-A	ISD11	already disconnected		6
+YCL057C-A	MIC10	splits off	piece 1 (65 proteins)	3
+YJR080C	AIM24	splits off	piece 1 (65 proteins)	1
+YGR235C	MIC26	splits off	piece 1 (65 proteins)	1
+YCL064C	CHA1	already disconnected		2
+YOL096C	COQ3	already disconnected		4
+YER086W	ILV1	already disconnected		4
+YCR012W	PGK1	already disconnected		3
+YGR192C	TDH3	already disconnected		3
+YJL052W	TDH1	already disconnected		5
+YJR009C	TDH2	already disconnected		4
+YCR028C-A	RIM1	already disconnected		5
+YOR330C	MIP1	already disconnected		1
+YKL114C	APN1	already disconnected		1
+YML032C	RAD52	already disconnected		1
+YML061C	PIF1	already disconnected		2
+YMR234W	RNH1	already disconnected		2
+YCR079W	PTC6	splits off	piece 1 (65 proteins)	3
+YGR193C	PDX1	splits off	piece 1 (65 proteins)	7
+YNL071W	LAT1	splits off	piece 1 (65 proteins)	7
+YCR083W	TRX3	already disconnected		1
+YHR106W	TRR2	already disconnected		1
+YDL044C	MTF2	already disconnected		1
+YFL036W	RPO41	already disconnected		4
+YDL048C	STP4	already disconnected		1
+YDL066W	IDP1	splits off	piece 1 (65 proteins)	5
+YER073W	ALD5	splits off	piece 1 (65 proteins)	5
+YLR174W	IDP2	splits off	piece 1 (65 proteins)	4
+YNL009W	IDP3	splits off	piece 1 (65 proteins)	4
+YNL037C	IDH1	splits off	piece 1 (65 proteins)	11
+YDL078C	MDH3	splits off	piece 1 (65 proteins)	1
+YKL085W	MDH1	splits off	piece 1 (65 proteins)	9
+YDL085W	NDE2	already disconnected		3
+YML120C	NDI1	already disconnected		4
+YOR176W	HEM15	already disconnected		2
+YDL164C	CDC9	already disconnected		1
+YKL113C	RAD27	already disconnected		2
+YDL174C	DLD1	already disconnected		2
+YDL178W	DLD2	already disconnected		2
+YEL071W	DLD3	already disconnected		2
+YPL017C	IRC15	splits off	piece 1 (65 proteins)	8
+YDR049W	VMS1	already disconnected		1
+YMR060C	SAM37	already disconnected		1
+YDR065W	RRG1	already disconnected		3
+YML091C	RPM2	already disconnected		5
+YLR091W	GEP5	already disconnected		3
+YPR116W	RRG8	already disconnected		3
+YDR148C	KGD2	splits off	piece 1 (65 proteins)	8
+YFR049W	KGD4	splits off	piece 1 (65 proteins)	8
+YDR150W	NUM1	already disconnected		2
+YFL016C	MDJ1	already disconnected		2
+YLL001W	DNM1	already disconnected		3
+YDR194C	MSS116	already disconnected		1
+YDR204W	COQ4	already disconnected		2
+YGR255C	COQ6	already disconnected		2
+YDR226W	ADK1	already disconnected		2
+YER170W	ADK2	already disconnected		1
+YER078C	ICP55	already disconnected		1
+YJL200C	ACO2	splits off	piece 1 (65 proteins)	2
+YDR234W	LYS4	splits off	piece 1 (65 proteins)	2
+YOR356W	CIR2	splits off	piece 1 (65 proteins)	1
+YDR256C	CTA1	already disconnected		1
+YGR088W	CTT1	already disconnected		1
+YDR341C	YDR341C	already disconnected		6
+YHR011W	DIA4	already disconnected		2
+YNL073W	MSK1	already disconnected		4
+YPL040C	ISM1	already disconnected		6
+YOR168W	GLN4	already disconnected		6
+YHR091C	MSR1	already disconnected		5
+YHR008C	SOD2	stays in largest part		2
+YJR060W	CBF1	stays in largest part		2
+YDR379C-A	SDH6	already disconnected		2
+YDR511W	SDH7	already disconnected		2
+YEL030W	ECM10	already disconnected		2
+YLR369W	SSQ1	already disconnected		4
+YJR031C	GEA1	stays in largest part		1
+YER061C	CEM1	already disconnected		1
+YER069W	ARG56	already disconnected		1
+YJL071W	ARG2	already disconnected		1
+YOR374W	ALD4	splits off	piece 1 (65 proteins)	3
+YOR017W	PET127	already disconnected		1
+YMR228W	MTF1	already disconnected		1
+YFL042C	LAM5	already disconnected		1
+YFL046W	FMP32	already disconnected		1
+YLR283W	PUT7	already disconnected		1
+YFR048W	RMD8	already disconnected		1
+YGL018C	JAC1	already disconnected		4
+YGR033C	TIM21	already disconnected		3
+YJL104W	PAM16	already disconnected		3
+YGL059W	PKP2	already disconnected		1
+YIL042C	PKP1	already disconnected		1
+YGL064C	MRH4	stays in largest part		1
+YGL211W	NCS6	already disconnected		1
+YGL236C	MTO1	already disconnected		1
+YMR023C	MSS1	already disconnected		1
+YGL245W	GUS1	already disconnected		2
+YOL033W	MSE1	already disconnected		1
+YGR094W	VAS1	already disconnected		1
+YGR171C	MSM1	already disconnected		1
+YGR207C	CIR1	already disconnected		1
+YPR004C	AIM45	already disconnected		1
+YMR225C	MRPL44	stays in largest part		2
+YGR240C	PFK1	already disconnected		1
+YMR205C	PFK2	already disconnected		1
+YGR244C	LSC2	already disconnected		2
+YOR142W	LSC1	already disconnected		2
+YHL021C	AIM17	splits off	piece 1 (65 proteins)	2
+YHR042W	NCP1	already disconnected		1
+YHR076W	PTC7	already disconnected		1
+YOR090C	PTC5	already disconnected		1
+YHR208W	BAT1	splits off	piece 1 (65 proteins)	4
+YJR148W	BAT2	splits off	piece 1 (65 proteins)	1
+YIL094C	LYS12	splits off	piece 1 (65 proteins)	2
+YPL061W	ALD6	splits off	piece 1 (65 proteins)	3
+YIL098C	FMC1	already disconnected		2
+YJL180C	ATP12	already disconnected		2
+YIL139C	REV7	already disconnected		2
+YOR346W	REV1	already disconnected		2
+YPL167C	REV3	already disconnected		2
+YIL155C	GUT2	already disconnected		2
+YOL059W	GPD2	already disconnected		2
+YJL045W	SDH9	already disconnected		1
+YOL021C	DIS3	already disconnected		2
+YKL152C	GPM1	splits off	piece 1 (65 proteins)	2
+YKL040C	NFU1	splits off	piece 1 (65 proteins)	4
+YJL208C	NUC1	already disconnected		1
+YKR079C	TRZ1	already disconnected		1
+YOR020C	HSP10	already disconnected		1
+YNL310C	ZIM17	already disconnected		1
+YNL315C	ATP11	already disconnected		1
+YLL027W	ISA1	splits off	piece 1 (65 proteins)	2
+YKL055C	OAR1	already disconnected		1
+YOR221C	MCT1	already disconnected		1
+YKL157W	APE2	splits off	piece 1 (65 proteins)	1
+YKL132C	RMA1	already disconnected		2
+YMR113W	FOL3	already disconnected		2
+YOR241W	MET7	already disconnected		2
+YOL071W	SDH5	already disconnected		1
+YKR036C	CAF4	already disconnected		1
+YLL007C	LMO1	already disconnected		1
+YLR422W	DCK1	already disconnected		2
+YPR067W	ISA2	splits off	piece 1 (65 proteins)	1
+YLR109W	AHP1	already disconnected		1
+YLR132C	USB1	already disconnected		1
+YLR163C	MAS1	already disconnected		3
+YLR290C	COQ11	already disconnected		1
+YPL262W	FUM1	already disconnected		1
+YOR187W	TUF1	already disconnected		1
+YMR072W	ABF2	splits off	piece 1 (65 proteins)	3
+YMR306W	FKS3	already disconnected		1
+YNL180C	RHO5	already disconnected		1
+YOL027C	MDM38	stays in largest part		2
+YPL082C	MOT1	splits off	piece 1 (65 proteins)	1
+YMR207C	HFA1	already disconnected		1
+YNR016C	ACC1	already disconnected		2
+YNL104C	LEU4	already disconnected		1
+YOR108W	LEU9	already disconnected		1
+YNL223W	ATG4	already disconnected		1
+YNR007C	ATG3	already disconnected		1
+YOR201C	MRM1	stays in largest part		1
+YPR125W	YLH47	stays in largest part		1
