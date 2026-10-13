@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+import split_view as sv            # shared look + drawing (keep split_view.py in this folder)
 from scipy.sparse.csgraph import shortest_path
 
 # ----------------------------------------------------------------------------
@@ -35,11 +36,7 @@ STEP_OVERRIDE = {}             # e.g. {"betweenness": 6} to view another step
 USE_CYTOSCAPE = True
 BASE_NETWORK_TITLE = "Yeast mitochondrial PPI"
 COLLECTION = "Adaptive attack views"
-STYLE_NAME = "Attack split"
-
-FATES = ["critical protein", "stays in largest part", "splits off", "already disconnected"]
-FATE_COLORS = ["#D55E00", "#0072B2", "#E69F00", "#BBBBBB"]
-FATE_SIZES = [70, 35, 35, 25]
+# Colours, sizes, shapes, labels and edge styles of the split views live in split_view.py (LOOK block).
 
 SCORE = {
     "degree": lambda H: dict(H.degree()),
@@ -293,96 +290,29 @@ for ax, col, title in zip(axes2, ["R_lcc", "R_efficiency"],
 fig2.tight_layout()
 fig2.savefig(f"{OUT_DIR}/adaptive_vs_static_R.png", dpi=200)
 
+
 # ----------------------------------------------------------------------------
 # 6. WHERE THE NETWORK BREAKS: one view per adaptive attack
 # ----------------------------------------------------------------------------
-def largest_component(H):
-    return max(nx.connected_components(H), key=len, default=set())
-
-
-def make_layout(G):
-    """Largest component drawn by path distance; small components in rows underneath."""
-    comps = sorted(nx.connected_components(G), key=len, reverse=True)
-    pos = nx.kamada_kawai_layout(G.subgraph(comps[0]))
-    per_row, dx, dy = 12, 2.0 / 11, 0.16
-    for i, c in enumerate(comps[1:]):
-        cx, cy = -1 + (i % per_row) * dx, -1.25 - (i // per_row) * dy
-        for n, (px, py) in nx.circular_layout(G.subgraph(c), scale=0.035 + 0.008 * len(c)).items():
-            pos[n] = (cx + px, cy + py)
-    return pos
-
-
 views = {}
 for s in STRATEGIES:
     df = adaptive[s]
     step = STEP_OVERRIDE.get(s, int(df.loc[df["lcc_drop"].idxmax(), "step"]))
-    removed_before = adaptive_order[s][:step - 1]
-    critical = adaptive_order[s][step - 1]
-    before = G.copy()
-    before.remove_nodes_from(removed_before)
-    main = largest_component(before)
-    pieces = sorted(nx.connected_components(before.subgraph(main - {critical})), key=len, reverse=True)
+    v = sv.build_view(G, adaptive_order[s][:step - 1], adaptive_order[s][step - 1], sym)
+    v["step"] = step
+    views[s] = v
+    v["nodes"].to_csv(f"{OUT_DIR}/split_adaptive_{s}.tsv", sep="\t", index=False)
 
-    fate = {n: "already disconnected" for n in before}
-    piece = {n: "" for n in before}
-    for i, p in enumerate(pieces):
-        for n in p:
-            fate[n] = "stays in largest part" if i == 0 else "splits off"
-            piece[n] = "" if i == 0 else f"piece {i} ({len(p)} proteins)"
-    fate[critical] = "critical protein"
-
-    table = pd.DataFrame({"id": list(before.nodes())})
-    table["symbol"] = table["id"].map(sym)
-    table["fate"] = table["id"].map(fate)
-    table["piece"] = table["id"].map(piece)
-    table.to_csv(f"{OUT_DIR}/split_adaptive_{s}.tsv", sep="\t", index=False)
-    views[s] = dict(step=step, critical=critical, removed_before=removed_before, before=before, table=table,
-                    fate=fate, lcc_before=len(main), lcc_after=int(df.loc[df["step"] == step, "lcc_n"].iloc[0]))
-
-    print(f"\n=== ADAPTIVE {s.upper()}: most damaging removal is step {step}, {sym(critical)} ===")
-    print(f"Largest component: {len(main)} -> {views[s]['lcc_after']} proteins")
-    print(f"Pieces that split off: {[len(p) for p in pieces[1:]] or 'none'}")
-    print(f"Removed before it ({len(removed_before)}): {', '.join(sym(n) for n in removed_before)}")
-    for i, p in enumerate(pieces[1:4], start=1):
+    print(f"\n=== ADAPTIVE {s.upper()}: most damaging removal is step {step}, {sym(v['critical'])} ===")
+    print(f"Largest component: {v['lcc_before']} -> {v['lcc_after']} proteins")
+    print(f"Pieces that split off: {[len(p) for p in v['pieces'][1:]] or 'none'}")
+    print(f"Removed before it ({len(v['removed_before'])}): {', '.join(sym(n) for n in v['removed_before'])}")
+    for i, p in enumerate(v["pieces"][1:4], start=1):
         print(f"Piece {i} ({len(p)}): {', '.join(sorted(sym(n) for n in p))}")
 
-pos = make_layout(G)
-color_of = dict(zip(FATES, FATE_COLORS))
+pos = sv.make_layout(G)
 for s, v in views.items():
-    figv, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 9))
-    gone = set(v["removed_before"])
-    nx.draw_networkx_edges(G, pos, ax=ax1, edge_color="0.75", width=0.4, alpha=0.5)
-    nx.draw_networkx_nodes(G, pos, nodelist=[n for n in G if n not in gone and n != v["critical"]],
-                           node_color="#9ecae1", node_size=22, ax=ax1, linewidths=0)
-    nx.draw_networkx_nodes(G, pos, nodelist=list(gone), node_color="black", node_size=30, ax=ax1,
-                           label=f"removed earlier ({len(gone)})")
-    nx.draw_networkx_nodes(G, pos, nodelist=[v["critical"]], node_color=color_of["critical protein"],
-                           node_size=140, ax=ax1, label=f"critical protein: {sym(v['critical'])}")
-    ax1.set_title(f"Intact network ({N} proteins) with the first {v['step']} adaptive {s} targets marked")
-    ax1.legend(loc="upper left", fontsize=9)
-
-    B = v["before"]
-    nx.draw_networkx_edges(B, pos, edgelist=[e for e in B.edges() if v["critical"] not in e], ax=ax2,
-                           edge_color="0.7", width=0.4, alpha=0.6)
-    nx.draw_networkx_edges(B, pos, edgelist=list(B.edges(v["critical"])), ax=ax2,
-                           edge_color=color_of["critical protein"], width=1.6, style="dashed")
-    for f in FATES[::-1]:
-        nl = [n for n in B if v["fate"][n] == f]
-        nx.draw_networkx_nodes(B, pos, nodelist=nl, node_color=color_of[f], ax=ax2, linewidths=0,
-                               node_size=140 if f == "critical protein" else 26, label=f"{f} ({len(nl)})")
-    lab = {v["critical"]: sym(v["critical"])}
-    if B.degree(v["critical"]) <= 15:
-        lab.update({n: sym(n) for n in B.neighbors(v["critical"])})
-    nx.draw_networkx_labels(B, pos, labels=lab, font_size=8, font_weight="bold", ax=ax2)
-    ax2.set_title(f"Removing {sym(v['critical'])} (step {v['step']}): largest component "
-                  f"{v['lcc_before']} -> {v['lcc_after']} proteins")
-    ax2.legend(loc="upper left", fontsize=9)
-    ax1.set_axis_off()
-    ax2.set_axis_off()
-    figv.suptitle(f"Adaptive {s} attack: where the network breaks", fontsize=14)
-    figv.tight_layout()
-    figv.savefig(f"{OUT_DIR}/split_adaptive_{s}.png", dpi=200)
-
+    sv.draw_view(v, pos, v["step"], f"adaptive {s}", f"{OUT_DIR}/split_adaptive_{s}.png")
 print(f"\nTables and figures saved in '{OUT_DIR}'.")
 
 # ----------------------------------------------------------------------------
@@ -406,53 +336,10 @@ if USE_CYTOSCAPE:
             except Exception as e:
                 print("Cytoscape: could not add columns to the original network:", type(e).__name__, e)
 
-        style_ready, made = False, []
-        for s, v in views.items():
-            title = f"Adaptive {s}: split at step {v['step']} ({sym(v['critical'])})"
-            try:
-                if title in p4c.get_network_list():
-                    p4c.delete_network(title)
-                B = v["before"]
-                e_df = pd.DataFrame([(str(a), str(b)) for a, b in B.edges()], columns=["source", "target"])
-                e_df["interaction"] = "pp"
-                suid = p4c.create_network_from_data_frames(nodes=v["table"].copy(), edges=e_df,
-                                                           title=title, collection=COLLECTION)
-                made.append(title)
-                print(f"Cytoscape: created '{title}'")
-            except Exception as e:
-                print(f"Cytoscape: could not create the {s} network:", type(e).__name__, e)
-                continue
-            try:
-                if base is not None:
-                    p4c.layout_copycat(base, suid)
-                else:
-                    p4c.layout_network("force-directed", network=suid)
-            except Exception as e:
-                print("  layout step skipped:", type(e).__name__, e)
-            try:
-                if not style_ready:
-                    if STYLE_NAME in p4c.get_visual_style_names():
-                        p4c.delete_visual_style(STYLE_NAME)
-                    defaults = {"NODE_SHAPE": "ELLIPSE", "NODE_SIZE": 35, "NODE_LABEL_FONT_SIZE": 9,
-                                "NODE_BORDER_WIDTH": 0, "EDGE_TRANSPARENCY": 110, "EDGE_WIDTH": 1}
-                    mappings = [
-                        p4c.map_visual_property("node label", "symbol", "p", network=suid),
-                        p4c.map_visual_property("node fill color", "fate", "d", FATES, FATE_COLORS, network=suid),
-                        p4c.map_visual_property("node size", "fate", "d", FATES, FATE_SIZES, network=suid),
-                    ]
-                    p4c.create_visual_style(STYLE_NAME, defaults, mappings)
-                    style_ready = True
-                p4c.set_visual_style(STYLE_NAME, network=suid)
-                p4c.fit_content(network=suid)
-            except Exception as e:
-                print("  style step skipped:", type(e).__name__, e)
-            try:
-                png = os.path.abspath(os.path.join(OUT_DIR, f"cytoscape_split_adaptive_{s}.png"))
-                p4c.export_image(png, type="PNG", network=suid, overwrite_file=True)
-            except Exception as e:
-                print("  image export skipped:", type(e).__name__, e)
-        if made:
-            print(f"\nCytoscape: the new networks are in the Network panel (left side) under '{COLLECTION}'.")
+        sv.send_to_cytoscape(
+            [(f"Adaptive {s}: split at step {v['step']} ({sym(v['critical'])})", v,
+              f"cytoscape_split_adaptive_{s}.png") for s, v in views.items()],
+            COLLECTION, BASE_NETWORK_TITLE, OUT_DIR)
 
 if "ipykernel" in sys.modules:
     plt.show()
