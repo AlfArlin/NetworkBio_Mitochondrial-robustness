@@ -17,7 +17,7 @@ from matplotlib.lines import Line2D
 # LOOK  (one column per protein group; edit values, keep the order)
 # =============================================================================
 FATES       = ["critical protein", "previously removed", "splits off", "stays in largest part", "already disconnected"]
-FATE_COLORS = ["#D62728",          "#000000",            "#F0E442",    "#A6CEE3",               "#E5E5E5"]
+FATE_COLORS = ["#D62728",          "#000000",            "#F0E442",    "#0F9ED5",               "#E5E5E5"]
 FATE_SHAPES = ["DIAMOND",          "ELLIPSE",            "ELLIPSE",    "ELLIPSE",               "ELLIPSE"]
 FATE_SIZES  = [80,                 30,                   35,           25,                      18]    # Cytoscape px
 FATE_BORDER = [3,                  0,                    1,            0,                       0]     # black border width
@@ -26,6 +26,10 @@ MAX_LABELS_PER_GROUP = 40          # a group bigger than this gets no labels (av
                                    # the critical protein is always labelled
 LABEL_ALSO = []                    # extra proteins to label by gene name, e.g. ["COX1", "SSC1"]
 LABEL_ALSO_SIZE = 14
+
+CRITICAL_LABEL_PLACE = "auto"      # where the critical protein's name goes (figures only): "auto" = the
+                                   # emptiest spot around it, or a direction: "N","NE","E","SE","S","SW","W","NW"
+CRITICAL_LABEL_DISTANCE = 0.10     # distance from the protein, as a fraction of the network's width
 
 EDGE_STATUSES = ["cut by critical protein", "inside split-off part", "lost earlier", "other"]
 EDGE_COLORS   = ["#000000",                 "#C9A400",               "#BDBDBD",      "#D9D9D9"]
