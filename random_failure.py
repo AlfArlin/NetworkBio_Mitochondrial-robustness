@@ -223,10 +223,16 @@ run_corr.join(node_corr).to_csv(f"{OUT_DIR}/centrality_vs_random_damage.tsv", se
 if targeted is not None:
     targeted.to_csv(f"{OUT_DIR}/targeted_vs_random.tsv", sep="\t")
 x = np.arange(N + 1) / N
+EREL = EFF / EFF[:, [0]]                      # efficiency relative to the intact network
 pd.DataFrame({"fraction_removed": x,
               "lcc_mean": LCC.mean(0) / N, "lcc_p05": np.quantile(LCC, 0.05, 0) / N,
               "lcc_p95": np.quantile(LCC, 0.95, 0) / N,
-              "efficiency_mean": EFF.mean(0), "components_mean": COMP.mean(0)}
+              "lcc_min": LCC.min(0) / N, "lcc_max": LCC.max(0) / N,
+              "efficiency_mean": EFF.mean(0),
+              "eff_rel_mean": EREL.mean(0), "eff_rel_p05": np.quantile(EREL, 0.05, 0),
+              "eff_rel_p95": np.quantile(EREL, 0.95, 0),
+              "components_mean": COMP.mean(0), "components_p05": np.quantile(COMP, 0.05, 0),
+              "components_p95": np.quantile(COMP, 0.95, 0)}
              ).to_csv(f"{OUT_DIR}/random_curves.tsv", sep="\t", index=False)
 
 # ----------------------------------------------------------------------------
@@ -350,8 +356,8 @@ for ax, (label, s) in zip(axes4, snapshots.items()):
         nl = [n for n in s["H"] if s["status"][n] == st]
         nx.draw_networkx_nodes(s["H"], pos, nodelist=nl, node_color=color_of[st], node_size=24, ax=ax,
                                linewidths=0, label=f"{st} ({len(nl)})")
-    nx.draw_networkx_nodes(G, pos, nodelist=s["removed"], node_color="black", node_shape="x", node_size=28,
-                           ax=ax, label=f"removed ({len(s['removed'])})")
+    nx.draw_networkx_nodes(G, pos, nodelist=s["removed"], node_color="black", node_size=24, linewidths=0,
+                           ax=ax, label=f"removed ({len(s['removed'])})")      # black dot, as in the targeted views
     ax.set_title(f"{label}: run {s['run']}, R = {s['R']:.3f}\nlargest component {s['lcc']} proteins")
     ax.legend(loc="upper left", fontsize=9)
     ax.set_axis_off()

@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{...}
+\label{tab:results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccccccc}
+\toprule
+Removal & Centrality & $R_{\mathrm{LCC}}$ & $R_E$ & $f_{1/2}$ & $\Delta_{\max}$ & Caused by (step) & $z_{R}$ & $p_{R}$ & $z_{R_E}$ & $p_{R_E}$ & Gain (\%) \\
+\midrule
+Static & Betweenness & 0.119 & 0.124 & 0.065 & 68 & COX1 (22) & $-$7.10 & $\le$0.012 & $-$7.10 & $\le$0.012 & -- \\
+ & Closeness & 0.169 & 0.123 & 0.249 & 47 & VAR1 (43) & $-$4.93 & $\le$0.012 & $-$7.19 & $\le$0.012 & -- \\
+ & Degree & 0.185 & 0.145 & 0.264 & 29 & ACP1 (90) & $-$4.27 & $\le$0.012 & $-$6.01 & $\le$0.012 & -- \\
+\midrule
+Adaptive & Betweenness & 0.071 & 0.073 & 0.029 & 66 & NFU1 (8) & $-$9.22 & $\le$0.012 & $-$9.80 & $\le$0.012 & 40.9 \\
+ & Closeness & 0.102 & 0.087 & 0.161 & 99 & ILV2 (5) & $-$7.84 & $\le$0.012 & $-$9.05 & $\le$0.012 & 39.6 \\
+ & Degree & 0.147 & 0.123 & 0.196 & 29 & ACP1 (67) & $-$5.88 & $\le$0.012 & $-$7.15 & $\le$0.012 & 20.1 \\
+\midrule
+Random ($n=500$) & -- & 0.283 $\pm$ 0.023 & 0.258 $\pm$ 0.019 & 0.354 $\pm$ 0.048 & 36 $\pm$ 18 & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}}
+\par\smallskip
+\footnotesize{$R_{\mathrm{LCC}}$, $R_E$: robustness indices of the largest connected component and of global efficiency; $f_{1/2}$: fraction removed when the largest component first falls to half its size; $\Delta_{\max}$: largest single-step loss of proteins from the largest component; $z$, $p$: z score and one-sided empirical p value against 500 random-failure runs, Bonferroni-corrected for 6 attacks; random row: mean $\pm$ SD; Gain: reduction of $R_{\mathrm{LCC}}$ of the adaptive relative to the static attack.}
+\end{table}

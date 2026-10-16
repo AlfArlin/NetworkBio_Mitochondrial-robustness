@@ -1,55 +1,77 @@
 """
 split_view.py
 Shared look and drawing for the "where the network breaks" views.
-Used by attack_views.py and adaptive_attack.py: keep this file in the same folder.
+Used by attack_views.py, adaptive_attack.py and figures.py: keep this file in the same folder.
+
+One panel per view:
+  * light blue  = stays in the largest component
+  * yellow      = splits off when the critical protein goes
+  * black dots  = proteins removed in earlier steps (same size as the others)
+  * red diamond = the critical protein, its name written inside
+  * dashed      = interactions cut by the critical protein, kept clear of other lines
+Proteins that were already disconnected (and their interactions) are left out:
+the full network is shown in its own figure.
 
 TO CHANGE HOW THE VIEWS LOOK, EDIT ONLY THE "LOOK" BLOCK BELOW.
-The same settings drive the PNG figures and the Cytoscape style.
+The same settings drive the PNG figures and the Cytoscape style. Colours are set in style.py.
 """
 import os
 from collections import Counter
+import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from matplotlib.patches import FancyArrowPatch
 from matplotlib.lines import Line2D
+from matplotlib import patheffects
+import style                       # shared palette: colours are set in style.py
 
 # =============================================================================
 # LOOK  (one column per protein group; edit values, keep the order)
 # =============================================================================
 FATES       = ["critical protein", "previously removed", "splits off", "stays in largest part", "already disconnected"]
-FATE_COLORS = ["#D62728",          "#000000",            "#F0E442",    "#0F9ED5",               "#E5E5E5"]
+FATE_COLORS = [style.CRITICAL,     style.REMOVED,        style.SPLIT,  style.STAYS,             style.DISCONNECTED]
 FATE_SHAPES = ["DIAMOND",          "ELLIPSE",            "ELLIPSE",    "ELLIPSE",               "ELLIPSE"]
-FATE_SIZES  = [80,                 30,                   35,           25,                      18]    # Cytoscape px
+FATE_SIZES  = [80,                 25,                   35,           25,                      18]    # Cytoscape px (figures scale alike)
 FATE_BORDER = [3,                  0,                    1,            0,                       0]     # black border width
-LABEL_SIZES = [26,                 0,                    0,            0,                       0]     # 0 = no labels
-MAX_LABELS_PER_GROUP = 40          # a group bigger than this gets no labels (avoids clutter);
-                                   # the critical protein is always labelled
+LABEL_SIZES = [14,                 0,                    0,            0,                       0]     # 0 = no labels (Cytoscape px)
+MAX_LABELS_PER_GROUP = 40          # a group bigger than this gets no labels (avoids clutter)
 LABEL_ALSO = []                    # extra proteins to label by gene name, e.g. ["COX1", "SSC1"]
 LABEL_ALSO_SIZE = 14
 
-CRITICAL_LABEL_PLACE = "auto"      # where the critical protein's name goes (figures only): "auto" = the
-                                   # emptiest spot around it, or a direction: "N","NE","E","SE","S","SW","W","NW"
-CRITICAL_LABEL_DISTANCE = 0.10     # distance from the protein, as a fraction of the network's width
-
 EDGE_STATUSES = ["cut by critical protein", "inside split-off part", "lost earlier", "other"]
-EDGE_COLORS   = ["#000000",                 "#C9A400",               "#BDBDBD",      "#D9D9D9"]
+EDGE_COLORS   = [style.INK,                 style.SPLIT_EDGE,        style.EDGE,     style.EDGE]
 EDGE_WIDTHS   = [0.8,                       0.8,                     0.8,            0.8]
 EDGE_LINES    = ["EQUAL_DASH",              "SOLID",                 "DOT",          "SOLID"]     # Cytoscape line types
 
-SHOW_REMOVED_IN_VIEW = False   # False: the breaking-point panel (and Cytoscape network) shows only
-                               # proteins still present; True: previously removed are drawn in black
-LABEL_POSITION = "N,S,c,0.00,0.00"   # Cytoscape: label above the node (so black nodes keep readable labels)
+SHOW_REMOVED_IN_VIEW = True    # previously removed proteins as black dots (their interactions are not drawn)
+SHOW_DISCONNECTED = False      # False: proteins already cut off from the largest component are left out
+CUT_EDGE_GAP_PT = 1.5          # white space where a dashed line meets a protein (points)
+CUT_EDGE_BEND = 0.35           # how much a dashed line may bend to avoid others (0 = always straight)
+CUT_EDGE_MAX_BENT = 12         # with more cut lines than this (e.g. a whole complex), all stay straight
+CRITICAL_FONT_MAX = 9          # name inside the diamond: largest font tried (pt at a 10-inch-wide figure);
+                               # it shrinks until the name fits, the diamond keeps its size
+SHOW_TITLE = True              # one-line title with the step and the largest-component sizes
+SHOW_LEGEND = False            # True: legend in the top-left corner
+USE_LAYOUT_FILE = False        # False: the attack scripts' own layout (largest component by path distance);
+                               # True: the shared layout from network_layout.py (figures/network_layout.tsv)
+LABEL_POSITION = "C,C,c,0.00,0.00"   # Cytoscape: the label sits inside the node (the critical diamond)
 STYLE_NAME = "Attack split"
+LAYOUT_FILE = os.path.join("figures", "network_layout.tsv")
 # =============================================================================
 
-_MPL_LINE = {"SOLID": "solid", "EQUAL_DASH": "dashed", "LONG_DASH": "dashed", "DOT": "dotted", "DASH_DOT": "dashdot"}
-_MPL_SHAPE = {"DIAMOND": "D", "ELLIPSE": "o", "RECTANGLE": "s", "TRIANGLE": "^", "OCTAGON": "8", "HEXAGON": "h"}
+_MPL_LINE = {"SOLID": "solid", "EQUAL_DASH": (0, (3, 2)), "LONG_DASH": (0, (5, 2)), "DOT": "dotted",
+             "DASH_DOT": "dashdot"}
 
 
 def _look(values):
     return dict(zip(FATES, values))
 
 
+# -----------------------------------------------------------------------------
+# What happens at the breaking point
+# -----------------------------------------------------------------------------
 def build_view(G, removed_before, critical, sym):
     """Classify every protein and interaction for the moment just before `critical` is removed."""
     removed = set(removed_before)
@@ -71,7 +93,12 @@ def build_view(G, removed_before, critical, sym):
             piece[n] = "" if i == 0 else f"piece {i} ({len(p)} proteins)"
     fate[critical] = "critical protein"
 
-    shown = [n for n in G if SHOW_REMOVED_IN_VIEW or n not in removed]
+    def is_shown(n):
+        f = fate[n]
+        return ((f != "previously removed" or SHOW_REMOVED_IN_VIEW)
+                and (f != "already disconnected" or SHOW_DISCONNECTED))
+
+    shown = [n for n in G if is_shown(n)]
     counts = Counter(fate[n] for n in shown)
     group_size = _look(LABEL_SIZES)
     also = set(LABEL_ALSO)
@@ -96,14 +123,16 @@ def build_view(G, removed_before, critical, sym):
             return "inside split-off part"
         return "other"
 
-    nodes = pd.DataFrame({"id": shown})
+    nodes = pd.DataFrame({"id": list(G)})                    # every protein; 'shown' says which are drawn
     nodes["symbol"] = nodes["id"].map(sym)
     nodes["fate"] = nodes["id"].map(fate)
     nodes["piece"] = nodes["id"].map(piece)
     nodes["label"] = nodes["id"].map(label)
     nodes["label_size"] = nodes["id"].map(label_size).astype(int)
+    nodes["shown"] = nodes["id"].map(is_shown)
+    shown_set = set(shown)
     edges = pd.DataFrame([(str(a), str(b), edge_status(a, b)) for a, b in G.edges()
-                          if SHOW_REMOVED_IN_VIEW or (a not in removed and b not in removed)],
+                          if a in shown_set and b in shown_set and edge_status(a, b) != "lost earlier"],
                          columns=["source", "target", "edge_status"])
     return dict(G=G, critical=critical, removed_before=list(removed_before), fate=fate, label=label,
                 label_size=label_size, shown=shown,
@@ -112,7 +141,13 @@ def build_view(G, removed_before, critical, sym):
 
 
 def make_layout(G):
-    """Largest component drawn by path distance; small components in rows underneath."""
+    """The shared layout from network_layout.py if it exists; otherwise a quick stand-in."""
+    if USE_LAYOUT_FILE and os.path.exists(LAYOUT_FILE):
+        t = pd.read_csv(LAYOUT_FILE, sep="\t")
+        t["id"] = t["id"].astype(str)
+        if set(G) <= set(t["id"]):
+            return {r.id: (r.x, -r.y) for r in t.itertuples()}         # file uses Cytoscape's y-down
+        print(f"  {LAYOUT_FILE} does not match this network; using a temporary layout")
     comps = sorted(nx.connected_components(G), key=len, reverse=True)
     pos = nx.kamada_kawai_layout(G.subgraph(comps[0]))
     per_row, dx, dy = 12, 2.0 / 11, 0.16
@@ -123,80 +158,160 @@ def make_layout(G):
     return pos
 
 
-def _mpl_size(cyto_size):
-    return (cyto_size / 35.0) ** 2 * 60
+# -----------------------------------------------------------------------------
+# Drawing
+# -----------------------------------------------------------------------------
+def _mpl_size(cyto_size, scale=1.0):
+    """Cytoscape px -> matplotlib marker area (pt^2), as in the attack scripts' figures."""
+    return (cyto_size / 35.0) ** 2 * 60 * scale ** 2
+
+
+def _bezier(a, b, rad, t):
+    """Points on matplotlib's arc3 curve from a to b (equal-aspect axes)."""
+    m = (a + b) / 2
+    c = m + rad * np.array([b[1] - a[1], -(b[0] - a[0])])
+    t = t[:, None]
+    return (1 - t) ** 2 * a + 2 * (1 - t) * t * c + t ** 2 * b
+
+
+def _choose_bends(cut, pos, crit, others, clear):
+    """Bend each dashed line just enough to keep it off other dashed lines and proteins."""
+    if CUT_EDGE_BEND <= 0 or len(cut) > CUT_EDGE_MAX_BENT:
+        return {e: 0.0 for e in cut}
+    options = sorted({0.0} | {s * r for r in np.linspace(0, CUT_EDGE_BEND, 4)[1:] for s in (1, -1)}, key=abs)
+    t = np.linspace(0.15, 0.9, 16)
+    pts_other = np.array([pos[n] for n in others], dtype=float) if others else np.zeros((0, 2))
+    c = np.asarray(pos[crit], float)
+    placed, bend = [], {}
+    order = sorted(cut, key=lambda e: np.arctan2(*(np.asarray(pos[e[1]]) - c)[::-1]))
+    for e in order:
+        b = np.asarray(pos[e[1]], float)
+        best = None
+        for rad in options:
+            p = _bezier(c, b, rad, t)
+            cost = 0.0
+            if len(pts_other):
+                near = np.hypot(*(p[:, None, :] - pts_other[None, :, :]).transpose(2, 0, 1)) < clear
+                near[:, [i for i, n in enumerate(others) if n == e[1]]] = False
+                cost += near.any(axis=0).sum()
+            for q in placed:
+                cost += 2 * (np.hypot(*(p[:, None, :] - q[None, :, :]).transpose(2, 0, 1)) < clear).any(axis=1).sum()
+            cost += 0.5 * abs(rad)
+            if best is None or cost < best[0]:
+                best = (cost, rad, p)
+        bend[e] = best[1]
+        placed.append(best[2])
+    return bend
+
+
+def _legend(ax, v, scale):
+    color, size, border = _look(FATE_COLORS), _look(FATE_SIZES), _look(FATE_BORDER)
+    handles = []
+    for f in ["critical protein", "previously removed", "splits off", "stays in largest part"]:
+        k = v["counts"].get(f, 0)
+        if k:
+            handles.append(Line2D([], [], ls="", marker="D" if f == "critical protein" else "o",
+                                  ms=np.sqrt(_mpl_size(size[f], scale)), mfc=color[f],
+                                  mec="black" if border[f] else color[f], label=f"{f} ({k})"))
+    handles += [Line2D([], [], color=style.INK, lw=1.2 * scale, ls="--", label="cut by critical protein"),
+                Line2D([], [], color=style.SPLIT_EDGE, lw=1.2 * scale, label="inside split-off part")]
+    ax.legend(handles=handles, loc="upper left", fontsize=11 * scale, frameon=False)
+
+
+def draw_panel(ax, v, pos, scale=1.0, title=None):
+    """The network at the breaking point, on the given layout.
+
+    scale = figure width in inches / 10: sizes match the attack scripts' figures
+    (a 10-inch panel), so the picture looks the same at any width.
+    """
+    fate, crit, G = v["fate"], v["critical"], v["G"]
+    fig = ax.figure
+    color, size, border = _look(FATE_COLORS), _look(FATE_SIZES), _look(FATE_BORDER)
+    shown = v["shown"]
+    P = {n: np.asarray(pos[n], float) for n in shown}
+    xy = np.array(list(P.values()))
+    span = max(np.ptp(xy[:, 0]), np.ptp(xy[:, 1]))
+    pad = 0.04 * span
+    ax.set_xlim(xy[:, 0].min() - pad, xy[:, 0].max() + pad)
+    ax.set_ylim(xy[:, 1].min() - pad, xy[:, 1].max() + pad)
+    ax.set_aspect("equal")
+    ax.set_axis_off()
+    ax.set_anchor("N")
+    ax.apply_aspect()
+    pt_per_unit = ax.get_window_extent().width * 72 / fig.dpi / np.ptp(ax.get_xlim())
+
+    # interactions: largest part (grey) and split-off part (yellow); cut ones are drawn later
+    for st in ["other", "inside split-off part"]:
+        segs = [(P[a], P[b]) for a, b, z in v["edges"].itertuples(index=False) if z == st]
+        if segs:
+            ax.add_collection(LineCollection(segs, colors=dict(zip(EDGE_STATUSES, EDGE_COLORS))[st],
+                                             linewidths=dict(zip(EDGE_STATUSES, EDGE_WIDTHS))[st] * scale, zorder=1))
+    # proteins
+    for f in ["stays in largest part", "splits off", "previously removed"]:
+        nl = [n for n in shown if fate[n] == f]
+        if nl:
+            ax.scatter([P[n][0] for n in nl], [P[n][1] for n in nl], s=_mpl_size(size[f], scale), c=color[f],
+                       edgecolors="black" if border[f] else color[f],
+                       linewidths=border[f] * 0.5 * scale if border[f] else 0, zorder=3)
+    # critical protein: same diamond as before, name inside
+    s_crit = _mpl_size(size["critical protein"], scale)
+    ax.scatter(*P[crit], s=s_crit, marker="D", c=color["critical protein"], edgecolors="black",
+               linewidths=border["critical protein"] * 0.5 * scale, zorder=6)
+    diag_pt = np.sqrt(s_crit) * np.sqrt(2)                   # tip-to-tip width of matplotlib's "D" marker
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    fs = CRITICAL_FONT_MAX * scale
+    while True:                                               # largest font that fits inside the diamond
+        txt = ax.text(*P[crit], v["label"][crit], ha="center", va="center", fontsize=fs,
+                      fontweight="bold", color=style.INK, zorder=7)
+        bb = txt.get_window_extent(renderer)
+        w, h = bb.width * 72 / fig.dpi, bb.height * 72 / fig.dpi
+        if w + h <= 0.88 * diag_pt or fs <= 3 * scale:
+            break
+        txt.remove()
+        fs *= 0.92
+
+    # cut interactions: dashed, kept apart, with white space at both ends
+    cut = [(crit, b if a == crit else a) for a, b, z in v["edges"].itertuples(index=False)
+           if z == "cut by critical protein"]
+    node_d_unit = np.sqrt(_mpl_size(size["stays in largest part"], scale)) / pt_per_unit
+    bend = _choose_bends(cut, P, crit, [n for n in shown if n != crit], clear=1.2 * node_d_unit)
+    lw = EDGE_WIDTHS[0] * scale
+    for e in cut:
+        r_partner = np.sqrt(_mpl_size(size[fate[e[1]]], scale)) / 2
+        ax.add_patch(FancyArrowPatch(P[crit], P[e[1]], arrowstyle="-", connectionstyle=f"arc3,rad={bend[e]:.3f}",
+                                     shrinkA=diag_pt / 2 * 0.75 + CUT_EDGE_GAP_PT * scale,
+                                     shrinkB=r_partner + CUT_EDGE_GAP_PT * scale,
+                                     linestyle=(0, (4, 2.5)), lw=lw, color=style.INK, zorder=5,
+                                     path_effects=[patheffects.Stroke(linewidth=lw + 2.0 * scale, foreground="white"),
+                                                   patheffects.Normal()]))
+    if SHOW_LEGEND:
+        _legend(ax, v, scale)
+    if title:
+        ax.set_title(title, fontsize=13 * scale, fontweight="bold", loc="left")
+    return ax
+
+
+def view_title(v, step, attack_name=None):
+    return (f"Removing {v['label'][v['critical']]} at step {step}: largest component "
+            f"{v['lcc_before']} → {v['lcc_after']} proteins")
 
 
 def draw_view(v, pos, step, attack_name, path):
-    """Two panels: intact network with targets marked | network at the breaking point."""
-    G, fate, crit = v["G"], v["fate"], v["critical"]
-    color, shape, size, border, lsize = (_look(FATE_COLORS), _look(FATE_SHAPES), _look(FATE_SIZES),
-                                         _look(FATE_BORDER), _look(LABEL_SIZES))
-    ecolor, ewidth, eline = (dict(zip(EDGE_STATUSES, EDGE_COLORS)), dict(zip(EDGE_STATUSES, EDGE_WIDTHS)),
-                             dict(zip(EDGE_STATUSES, EDGE_LINES)))
-    xs = [p[0] for p in pos.values()]
-    ys = [p[1] for p in pos.values()]
-    lift = 0.022 * max(max(xs) - min(xs), max(ys) - min(ys))       # labels sit just above their node
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-
-    # ---- left: intact network, attack targets marked
-    gone = set(v["removed_before"])
-    nx.draw_networkx_edges(G, pos, ax=ax1, edge_color="#D9D9D9", width=0.5)
-    nx.draw_networkx_nodes(G, pos, nodelist=[n for n in G if n not in gone and n != crit],
-                           node_color="#A6CEE3", node_size=_mpl_size(25), ax=ax1, linewidths=0)
-    nx.draw_networkx_nodes(G, pos, nodelist=list(gone), node_color=color["previously removed"],
-                           node_size=_mpl_size(size["previously removed"]), ax=ax1, linewidths=0)
-    nx.draw_networkx_nodes(G, pos, nodelist=[crit], node_color=color["critical protein"],
-                           node_shape=_MPL_SHAPE.get(shape["critical protein"], "o"),
-                           node_size=_mpl_size(size["critical protein"]), ax=ax1,
-                           edgecolors="black", linewidths=border["critical protein"] * 0.5)
-    ax1.set_title(f"Intact network ({G.number_of_nodes()} proteins): the first {step} {attack_name} targets",
-                  fontsize=13)
-    ax1.legend(handles=[
-        Line2D([], [], ls="", marker="o", ms=8, mfc=color["previously removed"], mec="none",
-               label=f"removed before step {step} ({len(gone)})"),
-        Line2D([], [], ls="", marker=_MPL_SHAPE.get(shape["critical protein"], "o"), ms=12,
-               mfc=color["critical protein"], mec="black", label=f"critical protein: {v['label'][crit]}")],
-        loc="upper left", fontsize=11, frameon=False)
-
-    # ---- right: breaking point
-    for st in ["other", "lost earlier", "inside split-off part", "cut by critical protein"]:
-        el = [(a, b) for a, b, s in v["edges"].itertuples(index=False) if s == st]
-        if el:
-            nx.draw_networkx_edges(G, pos, edgelist=el, ax=ax2, edge_color=ecolor[st], width=ewidth[st],
-                                   style=_MPL_LINE.get(eline[st], "solid"))
-    for f in ["already disconnected", "stays in largest part", "splits off", "previously removed",
-              "critical protein"]:
-        nl = [n for n in v["shown"] if fate[n] == f]
-        if nl:
-            nx.draw_networkx_nodes(G, pos, nodelist=nl, node_color=color[f], ax=ax2,
-                                   node_shape=_MPL_SHAPE.get(shape[f], "o"), node_size=_mpl_size(size[f]),
-                                   edgecolors="black" if border[f] > 0 else color[f],
-                                   linewidths=border[f] * 0.5 if border[f] > 0 else 0)
-    for fs in sorted({z for z in v["label_size"].values() if z > 0}):
-        lab = {n: v["label"][n] for n in v["shown"] if v["label_size"][n] == fs}
-        if not lab:
-            continue
-        nx.draw_networkx_labels(G, {n: (pos[n][0], pos[n][1] + lift) for n in lab}, labels=lab, ax=ax2,
-                                font_size=fs * 0.5, font_weight="bold",
-                                bbox=dict(facecolor="white", edgecolor="none", alpha=0.8, pad=0.6))
-    handles = [Line2D([], [], ls="", marker=_MPL_SHAPE.get(shape[f], "o"), ms=12 if f == "critical protein" else 8,
-                      mfc=color[f], mec="black" if border[f] > 0 else color[f],
-                      label=f"{f} ({v['counts'].get(f, 0)})") for f in FATES if v["counts"].get(f, 0) > 0]
-    present = set(v["edges"]["edge_status"])
-    handles += [Line2D([], [], color=ecolor[s], lw=max(ewidth[s], 1.5), ls=_MPL_LINE.get(eline[s], "solid"), label=s)
-                for s in EDGE_STATUSES if s != "other" and s in present]
-    ax2.legend(handles=handles, loc="upper left", fontsize=11, frameon=False)
-    ax2.set_title(f"Removing {v['label'][crit]} at step {step}: largest component "
-                  f"{v['lcc_before']} → {v['lcc_after']} proteins", fontsize=13)
-    for ax in (ax1, ax2):
-        ax.set_axis_off()
+    """Single-panel working figure (10 inches wide), saved as PNG (used by the attack scripts)."""
+    xy = np.array([pos[n] for n in v["shown"]], dtype=float)
+    aspect = np.ptp(xy[:, 1]) / max(np.ptp(xy[:, 0]), 1e-9)
+    fig, ax = plt.subplots(figsize=(10, 10 * min(max(aspect, 0.5), 1.6) + (0.4 if SHOW_TITLE else 0)))
+    draw_panel(ax, v, pos, scale=1.0, title=view_title(v, step) if SHOW_TITLE else None)
     fig.tight_layout()
-    fig.savefig(path, dpi=200)
+    if path:
+        fig.savefig(path, dpi=200)
     return fig
 
 
+# -----------------------------------------------------------------------------
+# Cytoscape
+# -----------------------------------------------------------------------------
 def send_to_cytoscape(items, collection, base_title, out_dir):
     """items: list of (network title, view dict, png file name). Prints what it did."""
     try:
@@ -211,10 +326,10 @@ def send_to_cytoscape(items, collection, base_title, out_dir):
         try:
             if title in p4c.get_network_list():
                 p4c.delete_network(title)
+            n_df = v["nodes"][v["nodes"]["shown"]].drop(columns="shown").copy()
             e_df = v["edges"].copy()
             e_df["interaction"] = "pp"
-            suid = p4c.create_network_from_data_frames(nodes=v["nodes"].copy(), edges=e_df,
-                                                       title=title, collection=collection)
+            suid = p4c.create_network_from_data_frames(nodes=n_df, edges=e_df, title=title, collection=collection)
             made.append(title)
             print(f"Cytoscape: created '{title}'")
         except Exception as e:
@@ -233,7 +348,8 @@ def send_to_cytoscape(items, collection, base_title, out_dir):
                     p4c.delete_visual_style(STYLE_NAME)
                 defaults = {"NODE_SHAPE": "ELLIPSE", "NODE_SIZE": 25, "NODE_BORDER_PAINT": "#000000",
                             "NODE_BORDER_WIDTH": 0, "NODE_LABEL_COLOR": "#000000", "NODE_LABEL_FONT_SIZE": 12,
-                            "NODE_LABEL_POSITION": LABEL_POSITION, "EDGE_WIDTH": 0.8, "EDGE_TRANSPARENCY": 255}
+                            "NODE_LABEL_POSITION": LABEL_POSITION, "EDGE_WIDTH": 0.8, "EDGE_TRANSPARENCY": 255,
+                            "NETWORK_BACKGROUND_PAINT": "#FFFFFF"}
                 wanted = [
                     ("node label", "label", "p", [], []),
                     ("node fill color", "fate", "d", FATES, FATE_COLORS),
